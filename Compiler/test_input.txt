@@ -1,0 +1,6 @@
+##x:= integer;
+if x > 5 then
+    write "x is greater than 5";
+else
+    write "x is less than 5";
+fi
