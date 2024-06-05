@@ -43,7 +43,6 @@ struct TOKEN
 
 class SCANNER {
 private:
-	FileDescriptor* Fd;
 	// define your functions ..
 	//I would define the following functions..
 	void skip_comments();
@@ -54,13 +53,14 @@ private:
 	TOKEN* get_int(const char* first_char); // gets integers and floats
 
 public:
+	FileDescriptor* Fd;
 	SCANNER();
 	SCANNER(FileDescriptor* fd);
 	TOKEN* Scan(FileDescriptor* fd);
 	// You may define it as TOKEN *Scan(FileDescriptor *fd);
 
 };
-int keys = 24; /* number of keywords */
+int keywords = 24; /* number of keywords */
 const char* keyword[] = {
 	"program", "var", "constant", "integer", "bool", "string",
 	"float", "true", "false", "if", "fi", "then", "else", "while",

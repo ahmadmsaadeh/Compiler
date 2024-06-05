@@ -1,6 +1,18 @@
-##x:= integer;
-if x > 5 then
-    write "x is greater than 5";
+program example;
+a := 10;
+b := 20;
+d := "Hello,world!";
+if (a > b) then
+write ("a is greater than b");
 else
-    write "x is less than 5";
+write ("b is greater than a");
 fi
+while (a<=MAX_VALUE) do
+write ( a );
+a := a + 1;
+od
+read ( b );
+for from a to MAX_VALUE by 1 do
+write ( a );
+od
+end

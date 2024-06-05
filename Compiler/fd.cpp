@@ -2,22 +2,6 @@
 #include <iostream>
 using namespace std;
 
-FileDescriptor::FileDescriptor()
-{
-	file = nullptr;
-	fp = stdin;
-	line_number = 0;
-	char_number = 0;
-	flag = UNSET;
-	buf_size = BUFFER_SIZE;
-	buffer = (char*)malloc(buf_size);
-	if (!buffer) {
-		cerr << "Buffer Can't Be Allocated 😢";
-		exit(EXIT_FAILURE);
-	}
-
-}
-
 FileDescriptor::FileDescriptor(char* FileName)
 {
 	file = _strdup(FileName);
@@ -25,9 +9,9 @@ FileDescriptor::FileDescriptor(char* FileName)
 		cerr << "File" << file << " Couldn't be opend 😢" << endl;
 		exit(EXIT_FAILURE);
 	}
-	line_number = 0;
+	ungetBuffer = '\0';
+	line_number = 1;
 	char_number = 0;
-	flag = UNSET;
 	buf_size = BUFFER_SIZE;
 	buffer = (char*)malloc(buf_size);
 	if (!buffer) {
@@ -36,60 +20,65 @@ FileDescriptor::FileDescriptor(char* FileName)
 	}
 }
 
+char FileDescriptor::readChar(){
+	if (ungetBuffer != '\0') {
+		char ch = ungetBuffer;
+		ungetBuffer = '\0';
+		return ch;
+	}
 
-char* FileDescriptor::GetFileName()
-{
-	return file;
-}
+	char ch = fgetc(fp);
+	if (ch == EOF) {
+		// Handle end of file (EOF)
+		return ch;
+	}
 
-bool FileDescriptor::IsOpen()
-{
-	return fp != nullptr;
-}
-
-char* FileDescriptor::GetCurrLine()
-{
-	if (fgets(buffer, buf_size, fp)) {
+	if (ch == '\n') {
+		buffer[char_number] = '\0'; // Null-terminate the buffer to represent the end of the line
+		char_number = 0; // Reset the character number for the next line
 		line_number++;
-		char_number = 0;
-		return buffer;
+		//std::cout << "\n--------" << buffer; // Process or print the line
+
 	}
-	return nullptr;
-}
-
-int FileDescriptor::GetLineNum()
-{
-	return line_number;
-}
-
-int FileDescriptor::GetCharNum()
-{
-	return char_number;
-}
-
-void FileDescriptor::Close()
-{
-	if (fp && fp != stdin) {
-		fclose(fp);
-		fp = nullptr;
-	}
-}
-
-char FileDescriptor::GetChar()
-{
-	if (flag == SET) {
-		flag = UNSET;
-		char_number--;
-		return buffer[char_number];
-	}
-
-	if (char_number == 0 || buffer[char_number] == '\0') {
-		if (!GetCurrLine()) {
-			return EOF;
+	else {
+		buffer[char_number++] = ch; // Store the character in the buffer
+		if (char_number >= buf_size - 1) {
+			// Resize the buffer if it's about to overflow
+			buf_size *= 2;
+			buffer = (char*)realloc(buffer, buf_size * sizeof(char));
+			if (buffer == nullptr) {
+				perror("Error reallocating memory for buffer");
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
-	return buffer[char_number++];
+	return ch;
+}
+
+void FileDescriptor::ungett() {
+	
+	if (ungetBuffer != '\0') {
+		std::cerr << "Error: Two ungets in a row are not allowed." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if (char_number > 0) {
+		ungetBuffer = buffer[char_number - 1]; // Store the last read character in the unget buffer
+		char_number--; // Decrement char_number after using it
+
+	}
+}
+
+char FileDescriptor::peek() {
+	char ch = readChar();
+	ungett();
+	return ch;
+}
+
+int FileDescriptor::getLineNumber()
+{
+	return line_number;
 }
 
 void FileDescriptor::ReportError(char* msg)
@@ -103,17 +92,6 @@ void FileDescriptor::ReportError(char* msg)
 
 }
 
-void FileDescriptor::UngetChar(char c)
-{
-	if (flag == UNSET) {
-		if (char_number > 0) {
-			char_number--;
-			buffer[char_number] = c;
-			flag = SET;
-		}
-	}
-}
-
 FileDescriptor::~FileDescriptor()
 {
 	if (fp && fp != stdin) {
@@ -123,23 +101,4 @@ FileDescriptor::~FileDescriptor()
 	if (file) {
 		free(file);
 	}
-}
-
-void FileDescriptor::unget() {
-	if (flag == UNSET) {
-		cerr << "Error: Two ungets in a row are not allowed." << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	if (char_number > 0) {
-		flag = SET; // Store the last read character in the unget buffer
-		char_number--; // Decrement char_number after using it
-
-	}
-}
-
-char FileDescriptor::peek() {
-	char ch = GetChar();
-	unget();
-	return ch;
 }
